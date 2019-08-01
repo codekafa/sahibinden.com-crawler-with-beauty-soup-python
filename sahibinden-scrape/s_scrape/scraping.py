@@ -38,12 +38,15 @@ class MainPageScraper(Scraper,object):
         soup = BeautifulSoup(c, "html.parser")
         subList = soup.find_all("li", {"class": "cl3"})
 
+        
         for itm in subList:
             tmp = itm.find("a", href=True)
             if tmp['href'] != "#":
                 ret_str = "https://www.sahibinden.com" + tmp['href']
                 sublist.append(ret_str)
+                print("Parent Uri" + ret_str );
         return sublist
+    
 
     def _get_listings_from_page(self, url, url_delayed=True):
         if url is None:
@@ -121,6 +124,7 @@ class MainPageScraper(Scraper,object):
         soup = BeautifulSoup(c, "html.parser")
         ctgList = soup.find_all("ul", {"class": "categoryList"})
         carList = ctgList[0].find_all("li")
+
         self.batchrun(self._wrapperBatchRun_scrapeModels, carList)
 
     def _wrapperBatchRun_scrapeSubModels(self,url):
@@ -134,7 +138,7 @@ class MainPageScraper(Scraper,object):
         self.batchrun(self._wrapperBatchRun_appendlistings,links)
 
 class DetailsScraper(Scraper):
-    def __init__(self, listings, n_jobs, uutils, lowerdelay=1, upperdelay=5):
+    def __init__(self, listings, n_jobs, uutils, lowerdelay=1, upperdelay=6):
         super().__init__(url="", njobs=n_jobs, lowerdelay=lowerdelay, upperdelay=5)
         self.listings = listings
         self.final_list = []
@@ -172,7 +176,6 @@ class DetailsScraper(Scraper):
         c = self.uutils.delayedreadURL(url, self.lowerdelay, self.upperdelay)
         try:
             root = html.fromstring(c)
-
             car['clsid'] = xpathSafeRead(root, self.ilan_xpath, 'ilan.')
             car['IlanTarihi'] = xpathSafeRead(root, self.ilantarihi_xpath, 'ilan tarihi.')
             car['Marka'] = xpathSafeRead(root, self.marka_xpath, 'marka.')#root.xpath(self.marka_xpath)[0].text.strip()
@@ -194,11 +197,10 @@ class DetailsScraper(Scraper):
             car['Takas'] = xpathSafeRead(root, self.takas_xpath, 'takas.')
             car['Durumu'] = xpathSafeRead(root, self.durum_xpath, 'durumu.')
             car['Fiyat'] = xpathSafeRead(root, self.fiyat_xpath, 'fiyat.')
-
-            print(car)
             print(" **** Processing complete **** ")
             return car
         except:
+            print("sıkıntı var")
             print(sys.exc_info()[0], " occured.")
 
     def _get_details_from_url(self, url):
@@ -237,9 +239,9 @@ class DetailsScraper(Scraper):
             car = {}
 
             for i, res in enumerate(li):
+                print(car[list_dict.get(i)]);
                 car[list_dict.get(i)] = res.find("span").text.strip()
             car['Fiyat'] = fiyat
-            print(car)
             print(" **** Processing complete **** ")
             return car
         except:
@@ -252,11 +254,15 @@ class DetailsScraper(Scraper):
         return cars
 
     def _wrapperBatchRun(self, url):
-        self.final_list.append(self._get_details_from_url_xpath(url))
+        car = self._get_details_from_url_xpath(url)
+        print(car)
+        self.final_list.append(car)
 
     def scrapeUrl(self, url, method='xpath'):
         if method=='xpath':
-            return self._get_details_from_url_xpath(url)
+            car = self._get_details_from_url_xpath(url)
+            print(car)
+            return car
         elif method =='soup':
             return self._get_details_from_url(url)
 
